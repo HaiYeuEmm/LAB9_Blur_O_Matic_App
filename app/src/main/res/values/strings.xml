@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Lab 9</string>
+
+    <string name="blur_title">Chọn mức độ làm mờ</string>
+    <string name="select_image">Chọn hình ảnh</string>
+    <string name="start">Bắt đầu</string>
+    <string name="see_file">Xem ảnh</string>
+    <string name="description_image">Hình ảnh để làm mờ và lưu lại.</string>
+    <string name="blur_lv_1">Mờ nhẹ</string>
+    <string name="blur_lv_2">Mờ vừa</string>
+    <string name="blur_lv_3">Mờ nhiều</string>
+    <string name="cancel_work">Hủy tác vụ</string>
+    <string name="set_permissions_in_settings">Vào Cài đặt -> Ứng dụng -> Lab 9 -> Quyền và cấp quyền truy cập Thông báo và Bộ nhớ.</string>
+    <string name="blurring_image">Đang làm mờ ảnh...</string>
+    <string name="saving_image">Đang lưu ảnh vào máy...</string>
+    <string name="cleaning_up_files">Đang dọn dẹp các tệp tạm...</string>
+    <string name="invalid_input_uri">Đường dẫn ảnh không hợp lệ</string>
+    <string name="error_applying_blur">Lỗi khi đang làm mờ</string>
+    <string name="writing_to_mediaStore_failed">Không thể lưu vào thư viện ảnh</string>
+    <string name="error_saving_image">Lỗi khi lưu ảnh</string>
+    <string name="error_cleaning_file">Lỗi khi dọn dẹp tệp tạm</string>
+    <string name="save_congratulations">Đã lưu ảnh thành công!</string>
+</resources>
