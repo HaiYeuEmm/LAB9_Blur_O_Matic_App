@@ -2,7 +2,6 @@ package com.example.lab9.ui
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,7 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,13 +43,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lab9.R
 import com.example.lab9.data.BlurAmount
 import com.example.lab9.ui.theme.Lab9Theme
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.core.net.toUri
+import java.io.File
 
 @Composable
 fun BluromaticScreen(blurViewModel: BlurViewModel = viewModel(factory = BlurViewModel.Factory)) {
@@ -71,7 +71,6 @@ fun BluromaticScreen(blurViewModel: BlurViewModel = viewModel(factory = BlurView
             blurUiState = uiState,
             blurAmountOptions = blurViewModel.blurAmount,
             applyBlur = blurViewModel::applyBlur,
-            cancelWork = {}, // Sau này bạn nên thêm: blurViewModel::cancelWork
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
                 .padding(dimensionResource(R.dimen.padding_medium))
@@ -84,12 +83,10 @@ fun BluromaticScreenContent(
     blurUiState: BlurUiState,
     blurAmountOptions: List<BlurAmount>,
     applyBlur: (Int) -> Unit,
-    cancelWork: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Sửa thành mutableIntStateOf
     var selectedValue by rememberSaveable { mutableIntStateOf(1) }
-    val context = LocalContext.current // Bạn sẽ cần cái này khi gọi showBlurredImage
+    val context = LocalContext.current
 
     Column(modifier = modifier) {
         Image(
@@ -112,7 +109,6 @@ fun BluromaticScreenContent(
             onSeeFileClick = { currentUri ->
                 showBlurredImage(context, currentUri)
             },
-            onCancelClick = { cancelWork() },
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -123,30 +119,32 @@ private fun BlurActions(
     blurUiState: BlurUiState,
     onStartClick: () -> Unit,
     onSeeFileClick: (String) -> Unit,
-    onCancelClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small))
     ) {
-        // Ví dụ logic xử lý UI State để hết báo vàng tham số
-        when (blurUiState) {
-            is BlurUiState.Loading -> {
-                Button(onClick = onCancelClick, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.cancel_work))
+        // Nút Bắt đầu
+        Button(
+            onClick = onStartClick,
+            modifier = Modifier.weight(1f),
+            enabled = blurUiState !is BlurUiState.Loading
+        ) {
+            Text(stringResource(R.string.start))
+        }
+
+        // Nút Xem ảnh (Luôn hiển thị, chỉ bật khi có ảnh)
+        Button(
+            onClick = {
+                if (blurUiState is BlurUiState.Complete) {
+                    onSeeFileClick(blurUiState.outputUri)
                 }
-            }
-            is BlurUiState.Complete -> {
-                Button(onClick = { onSeeFileClick(blurUiState.outputUri) }, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.see_file))
-                }
-            }
-            else -> {
-                Button(onClick = onStartClick, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.start))
-                }
-            }
+            },
+            modifier = Modifier.weight(1f),
+            enabled = blurUiState is BlurUiState.Complete
+        ) {
+            Text(stringResource(R.string.see_file))
         }
     }
 }
@@ -192,13 +190,34 @@ private fun BlurAmountContent(
 }
 
 private fun showBlurredImage(context: Context, currentUri: String) {
-    val uri = if (currentUri.isNotEmpty()) {
-        currentUri.toUri()
-    } else {
-        null
+    if (currentUri.isEmpty()) return
+    val uri = currentUri.toUri()
+    
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    val actionView = Intent(Intent.ACTION_VIEW, uri)
-    context.startActivity(actionView)
+
+    if (uri.scheme == "content") {
+        intent.setDataAndType(uri, "image/*")
+    } else {
+        val file = File(uri.path ?: "")
+        if (file.exists()) {
+            val contentUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            intent.setDataAndType(contentUri, "image/*")
+        } else {
+            intent.setDataAndType(uri, "image/*")
+        }
+    }
+    
+    try {
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        // Handle error
+    }
 }
 
 @Preview(showBackground = true)
@@ -208,7 +227,6 @@ fun BluromaticScreenContentPreview() {
         BluromaticScreenContent(
             blurUiState = BlurUiState.Default,
             blurAmountOptions = listOf(BlurAmount(R.string.blur_lv_1, 1)),
-            {},
             {},
             modifier = Modifier.padding(16.dp)
         )

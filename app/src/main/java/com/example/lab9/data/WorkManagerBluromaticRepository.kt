@@ -24,13 +24,11 @@ class WorkManagerBluromaticRepository(context: Context) : BluromaticRepository {
     private var imageUri: Uri = context.getImageUri()
     private val workManager = WorkManager.getInstance(context)
 
-
     override val outputWorkInfo: Flow<WorkInfo?> = 
-        workManager.getWorkInfosForUniqueWorkFlow(IMAGE_MANIPULATION_WORK_NAME)
+        workManager.getWorkInfosByTagFlow(TAG_OUTPUT)
             .map { it.firstOrNull() }
 
     override fun applyBlur(blurLevel: Int) {
-
         var continuation = workManager.beginUniqueWork(
             IMAGE_MANIPULATION_WORK_NAME,
             ExistingWorkPolicy.REPLACE,
